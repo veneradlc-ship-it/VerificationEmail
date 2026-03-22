@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Подтверждение Email — VeneraHub</title>
+
+  <!-- Cloudflare Turnstile -->
+  <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
+
+  <style>
+    body{font-family:Segoe UI,Arial,sans-serif;background:#0a0a0a;color:#ddd;display:flex;align-items:center;justify-content:center;height:100vh;margin:0}
+    .card{width:520px;background:#111;border-radius:14px;padding:28px;border:1px solid #1e1e1e}
+    h1{margin:0 0 8px;font-size:20px;color:#fff}
+    p{margin:6px 0;color:#aaa}
+    .note{font-size:13px;color:#777;margin-top:8px}
+    .actions{margin-top:20px;text-align:center}
+    button{padding:10px 20px;border-radius:10px;border:0;background:#fff;color:#000;font-weight:600;cursor:pointer}
+    .error{color:#ff6666;margin-top:12px;display:none}
+    .ok{color:#66cc66;margin-top:12px;display:none}
+    .small{font-size:12px;color:#555;margin-top:8px}
+    a.link{color:#7aa7ff}
+  </style>
+</head>
+<body>
+  <div class="card" id="card">
+    <h1>Подтвердите Email</h1>
+    <p id="desc">Письмо отправлено. КОД ВВОДИТЬ НЕ НУЖНО. Нажмите кнопку и пройдите проверку «Я не робот».</p>
+
+    <!--
+      Замените action на полный URL вашего серверного endpoint,
+      например: https://api.yourdomain.com/api/verify-token
+      Сервер должен проверить cf-turnstile-response через Cloudflare siteverify
+      и затем вызвать ConsumeVerificationTokenAsync/MarkEmailVerifiedAsync.
+    -->
+    <form id="verifyForm" method="POST" action="/api/verify-token">
+      <input type="hidden" name="token" id="tokenInput" value="" />
+
+      <div style="display:flex;justify-content:center;margin-top:18px">
+        <!-- Вставьте сюда ваш sitekey (публичный) -->
+        <div class="cf-turnstile" data-sitekey="0x4AAAAACunLOYNp1LGTXDG"></div>
+      </div>
+
+      <div class="actions">
+        <button type="submit">Перейти к подтверждению</button>
+      </div>
+
+      <div id="err" class="error"></div>
+      <div id="ok" class="ok">Проверка пройдена. Спасибо, ожидайте подтверждения...</div>
+      <div class="small">Ссылка действует 15 минут. Формат ссылки: https://yourdomain.com/index.html?token=YOUR_TOKEN</div>
+    </form>
+
+    <p class="note">Если вы получили это письмо по ошибке — просто закройте страницу.</p>
+  </div>
+
+  <script>
+    (function(){
+      function getParam(name){
+        try{ const u = new URL(window.location.href); return u.searchParams.get(name); }catch(e){return null;}
+      }
+
+      const token = getParam('token') || getParam('t');
+      const tokenInput = document.getElementById('tokenInput');
+      const form = document.getElementById('verifyForm');
+      const err = document.getElementById('err');
+      const ok = document.getElementById('ok');
+
+      if(!token){
+        document.getElementById('desc').textContent = 'Недействительная ссылка. Отсутствует токен подтверждения.';
+        err.style.display = 'block';
+        err.textContent = 'Токен не найден в URL. Ссылка должна содержать ?token=...';
+        form.querySelector('button[type="submit"]').disabled = true;
+        return;
+      }
+
+      tokenInput.value = token;
+
+      // Добавим небольшую UX-обработку: при сабмите покажем сообщение,
+      // но реальная проверка и запись в БД должны выполняться на сервере.
+      form.addEventListener('submit', function(e){
+        // можно показать загрузку/блокировать кнопку, но не отменяем сабмит
+        err.style.display = 'none';
+        ok.style.display = 'block';
+      });
+    })();
+  </script>
+</body>
+</html>
